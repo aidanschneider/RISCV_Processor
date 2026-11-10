@@ -11,37 +11,88 @@
 
 // huge switch case in always block
 
-module ALU_unit(A, B, Control_in, ALU_result, zero);
+module ALU_unit(
+    input [31:0] A,
+    input [31:0] B,
+    input [3:0] Control_in,
+    output logic [31:0] ALU_Result,
+    output logic zero);
 
-input [31:0] A, B
-input [3:0] Control_in;
-output reg zero;
-output reg [31:0] ALU_Result
+    always_comb begin
 
-always @(Control_in, or A or B)
-begin
-    // based on ALU control lines to function table
-    case(Control_in)
-    4'b0000: begin zero <= 0; ALU_Result <= A & B; end
-    4'b0001: begin zero<=0; ALU_Result <= A | B; end
-    4'b0010: begin zero<=0; ALU_Result <= A + B; end
-    4'b0011: begin if(A==B) zero<=1; else zero<= 0; ALU_Result <= A - B; end
-    endcase
+        // based on ALU control lines to function table
+        // I SAW DIFFERENT THINGS IN DIFFERENT PLACES SO WE HAVE TO MAKE SURE TO BE CONSISTENT
+        case(Control_in)
+            4'b0000: ALUResult = SrcA + SrcB; // ADD
+            4'b0001: ALUResult = SrcA - SrcB; // SUB
+            4'b0010: ALUResult = SrcA & SrcB; // AND
+            4'b0011: ALUResult = SrcA | SrcB; // OR
+            4'b0100: ALUResult = SrcA ^ SrcB; // XOR
+            4'b0101: ALUResult = SrcA << SrcB[4:0]; // SLL
+            4'b0110: ALUResult = SrcA >> SrcB[4:0]; // SRL
+            4'b0111: ALUResult = $signed(SrcA) >>> SrcB[4:0]; // SRA
+            4'b1000: ALUResult = lt_signed ? 32'd1 : 32'd0; // SLT
+            4'b1001: ALUResult = lt_unsigned ? 32'd1 : 32'd0; // SLTU
+            default: ALUResult = 32'd0;
+        endcase
 
-end
+        assign zero = (ALU_Result == 32'd0);
+        // maybe assign lt_signed and lt_unsigned
+
+    end
 
 endmodule
 
-module ALU_Control(ALUOp, funct7, funct3, Control_out);
+module ALU_Control (
+    input  logic [1:0] ALUOp,
+    input  logic funct7,
+    input  logic [2:0] funct3,
+    output logic [3:0] Control_out
+);
 
-input funct7;
-input[2:0] funct3;
-output reg [3:0] Control_out;
+    always_comb begin
 
-always @(*)
-begin
     case({ALUOp, funct7, funct3})
-    6'b00_0_000: Control_out <= 4'b0010;
-    //TODO REST OF THEM
+    6'b00_0_000: Control_out = 4'b0010;
+    6'b01_0_000: Control_out = 4'b0110;
+    6'b10_0_000: Control_out = 4'b0010;
+    6'b10_1_000: Control_out = 4'b0110;
+    6'b10_0_111: Control_out = 4'b0000;
+    6'b10_0_110: Control_out = 4'b0001;
+    default: Control_out = 4'b0000;
+    endcase
 end
 endmodule
+
+//dunno if this was part of my code, but did it anyways
+module Data_Memory (
+    input  logic        clk,
+    input  logic        reset,
+    input  logic        MemWrite,
+    input  logic        MemRead,
+    input  logic [31:0] read_address,
+    input  logic [31:0] Write_data,
+    output logic [31:0] Memdata_out
+);
+
+
+integer k;
+logic [31:0] D_Memory[63:0];
+
+    always_ff @(posedge clk or posedge reset) begin
+        if(reset) begin
+        for(k=0; k<64; k=k+1)begin
+            D_Memory[k] <= 32'b00;
+        end
+
+    end
+        else if (MemWrite) begin
+            D_Memory[read_address[5:0]] <= Write_data; // todo maybe this should be [7:2]
+        end
+end
+    always_comb begin
+        assign Memdata_out = (MemRead) ? D_Memory[read_address[5:0]] : 32'b0;
+    end
+
+
+endmodule 
