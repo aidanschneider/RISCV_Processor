@@ -23,46 +23,90 @@ module ALU_unit(
         // based on ALU control lines to function table
         // I SAW DIFFERENT THINGS IN DIFFERENT PLACES SO WE HAVE TO MAKE SURE TO BE CONSISTENT
         case(Control_in)
-            4'b0000: ALUResult = SrcA + SrcB; // ADD
-            4'b0001: ALUResult = SrcA - SrcB; // SUB
-            4'b0010: ALUResult = SrcA & SrcB; // AND
-            4'b0011: ALUResult = SrcA | SrcB; // OR
-            4'b0100: ALUResult = SrcA ^ SrcB; // XOR
-            4'b0101: ALUResult = SrcA << SrcB[4:0]; // SLL
-            4'b0110: ALUResult = SrcA >> SrcB[4:0]; // SRL
-            4'b0111: ALUResult = $signed(SrcA) >>> SrcB[4:0]; // SRA
-            4'b1000: ALUResult = lt_signed ? 32'd1 : 32'd0; // SLT
-            4'b1001: ALUResult = lt_unsigned ? 32'd1 : 32'd0; // SLTU
-            default: ALUResult = 32'd0;
+            4'b0000: ALU_Result = A + B; // ADD
+            4'b0001: ALU_Result = A - B; // SUB
+            4'b0010: ALU_Result = A & B; // AND
+            4'b0011: ALU_Result = A | B; // OR
+            4'b0100: ALU_Result = A ^ B; // XOR
+            4'b0101: ALU_Result = A << B[4:0]; // SLL
+            4'b0110: ALU_Result = A >> B[4:0]; // SRL
+            4'b0111: ALU_Result = $signed(A) >>> B[4:0]; // SRA
+            4'b1000: ALU_Result = ($signed(A) < $signed(B)) ? 32'd1 : 32'd0; // SLT
+            4'b1001: ALU_Result = (A < B) ? 32'd1 : 32'd0; // SLTU
+            default: ALU_Result = 32'd0;
         endcase
 
-        assign zero = (ALU_Result == 32'd0);
         // maybe assign lt_signed and lt_unsigned
 
     end
+    assign zero = (ALU_Result == 32'd0);
 
 endmodule
 
+
 module ALU_Control (
     input  logic [1:0] ALUOp,
-    input  logic funct7,
+    input  logic       op5,
+    input  logic       funct75,
     input  logic [2:0] funct3,
     output logic [3:0] Control_out
 );
 
     always_comb begin
+        Control_out = 4'b0000; // Default: ADD
+        case (ALUOp)
+            // Address calculations and PC + 4
+            2'b00: Control_out = 4'b0000; // ADD
+            // Branch comparisons
+            2'b01: begin
+                case (funct3)
+                    3'b000: Control_out = 4'b0001; // BEQ: SUB
+                    3'b001: Control_out = 4'b0001; // BNE: SUB
+                    3'b100: Control_out = 4'b1000; // BLT: SLT
+                    3'b101: Control_out = 4'b1000; // BGE: SLT
+                    3'b110: Control_out = 4'b1001; // BLTU: SLTU
+                    3'b111: Control_out = 4'b1001; // BGEU: SLTU
+                    default: Control_out = 4'b0000;
+                endcase
+            end
 
-    case({ALUOp, funct7, funct3})
-    6'b00_0_000: Control_out = 4'b0010;
-    6'b01_0_000: Control_out = 4'b0110;
-    6'b10_0_000: Control_out = 4'b0010;
-    6'b10_1_000: Control_out = 4'b0110;
-    6'b10_0_111: Control_out = 4'b0000;
-    6'b10_0_110: Control_out = 4'b0001;
-    default: Control_out = 4'b0000;
-    endcase
-end
+            // Decode R-type and I-type ALU instructions
+            2'b10: begin
+                case (funct3)
+                    3'b000: begin
+                        // SUB only for register-register SUB.
+                        if (op5 && funct75)
+                            Control_out = 4'b0001;
+                        else
+                            Control_out = 4'b0000;
+                    end
+
+                    3'b001: Control_out = 4'b0101; // SLL
+                    3'b010: Control_out = 4'b1000; // SLT
+                    3'b011: Control_out = 4'b1001; // SLTU
+                    3'b100: Control_out = 4'b0100; // XOR
+
+                    3'b101: begin
+                        if (funct75)
+                            Control_out = 4'b0111; // SRA
+                        else
+                            Control_out = 4'b0110; // SRL
+                    end
+
+                    3'b110: Control_out = 4'b0011; // OR
+                    3'b111: Control_out = 4'b0010; // AND
+
+                    default: Control_out = 4'b0000;
+                endcase
+            end
+
+            default: Control_out = 4'b0000;
+
+        endcase
+    end
+
 endmodule
+
 
 //dunno if this was part of my code, but did it anyways
 module Data_Memory (
@@ -95,4 +139,4 @@ end
     end
 
 
-endmodule 
+endmodule
