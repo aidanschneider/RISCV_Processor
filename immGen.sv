@@ -6,8 +6,8 @@
 // );
 
 module immGen (
-    input  logic [2:0]  ImmSrc,
-    input  logic [31:0] instruction,
+    input logic [2:0]  ImmSrc,
+    input logic [31:0] instruction,
     output logic [31:0] ImmExt
 );
 

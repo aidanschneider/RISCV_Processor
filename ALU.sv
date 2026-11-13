@@ -14,7 +14,7 @@
 module ALU_unit(
     input [31:0] A,
     input [31:0] B,
-    input [3:0] Control_in,
+    input [3:0] control_in,
     output logic [31:0] ALU_Result,
     output logic zero);
 
@@ -22,7 +22,7 @@ module ALU_unit(
 
         // based on ALU control lines to function table
         // I SAW DIFFERENT THINGS IN DIFFERENT PLACES SO WE HAVE TO MAKE SURE TO BE CONSISTENT
-        case(Control_in)
+        case(control_in)
             4'b0000: ALU_Result = A + B; // ADD
             4'b0001: ALU_Result = A - B; // SUB
             4'b0010: ALU_Result = A & B; // AND
@@ -49,24 +49,24 @@ module ALU_Control (
     input  logic       op5,
     input  logic       funct75,
     input  logic [2:0] funct3,
-    output logic [3:0] Control_out
+    output logic [3:0] control_out
 );
 
     always_comb begin
-        Control_out = 4'b0000; // Default: ADD
+        control_out = 4'b0000; // Default: ADD
         case (ALUOp)
             // Address calculations and PC + 4
-            2'b00: Control_out = 4'b0000; // ADD
+            2'b00: control_out = 4'b0000; // ADD
             // Branch comparisons
             2'b01: begin
                 case (funct3)
-                    3'b000: Control_out = 4'b0001; // BEQ: SUB
-                    3'b001: Control_out = 4'b0001; // BNE: SUB
-                    3'b100: Control_out = 4'b1000; // BLT: SLT
-                    3'b101: Control_out = 4'b1000; // BGE: SLT
-                    3'b110: Control_out = 4'b1001; // BLTU: SLTU
-                    3'b111: Control_out = 4'b1001; // BGEU: SLTU
-                    default: Control_out = 4'b0000;
+                    3'b000: control_out = 4'b0001; // BEQ: SUB
+                    3'b001: control_out = 4'b0001; // BNE: SUB
+                    3'b100: control_out = 4'b1000; // BLT: SLT
+                    3'b101: control_out = 4'b1000; // BGE: SLT
+                    3'b110: control_out = 4'b1001; // BLTU: SLTU
+                    3'b111: control_out = 4'b1001; // BGEU: SLTU
+                    default: control_out = 4'b0000;
                 endcase
             end
 
@@ -76,67 +76,33 @@ module ALU_Control (
                     3'b000: begin
                         // SUB only for register-register SUB.
                         if (op5 && funct75)
-                            Control_out = 4'b0001;
+                            control_out = 4'b0001;
                         else
-                            Control_out = 4'b0000;
+                            control_out = 4'b0000;
                     end
 
-                    3'b001: Control_out = 4'b0101; // SLL
-                    3'b010: Control_out = 4'b1000; // SLT
-                    3'b011: Control_out = 4'b1001; // SLTU
-                    3'b100: Control_out = 4'b0100; // XOR
+                    3'b001: control_out = 4'b0101; // SLL
+                    3'b010: control_out = 4'b1000; // SLT
+                    3'b011: control_out = 4'b1001; // SLTU
+                    3'b100: control_out = 4'b0100; // XOR
 
                     3'b101: begin
                         if (funct75)
-                            Control_out = 4'b0111; // SRA
+                            control_out = 4'b0111; // SRA
                         else
-                            Control_out = 4'b0110; // SRL
+                            control_out = 4'b0110; // SRL
                     end
 
-                    3'b110: Control_out = 4'b0011; // OR
-                    3'b111: Control_out = 4'b0010; // AND
+                    3'b110: control_out = 4'b0011; // OR
+                    3'b111: control_out = 4'b0010; // AND
 
-                    default: Control_out = 4'b0000;
+                    default: control_out = 4'b0000;
                 endcase
             end
 
-            default: Control_out = 4'b0000;
+            default: control_out = 4'b0000;
 
         endcase
     end
-
-endmodule
-
-
-//dunno if this was part of my code, but did it anyways
-module Data_Memory (
-    input  logic        clk,
-    input  logic        reset,
-    input  logic        MemWrite,
-    input  logic        MemRead,
-    input  logic [31:0] read_address,
-    input  logic [31:0] Write_data,
-    output logic [31:0] Memdata_out
-);
-
-
-integer k;
-logic [31:0] D_Memory[63:0];
-
-    always_ff @(posedge clk or posedge reset) begin
-        if(reset) begin
-        for(k=0; k<64; k=k+1)begin
-            D_Memory[k] <= 32'b00;
-        end
-
-    end
-        else if (MemWrite) begin
-            D_Memory[read_address[5:0]] <= Write_data; // todo maybe this should be [7:2]
-        end
-end
-    always_comb begin
-        assign Memdata_out = (MemRead) ? D_Memory[read_address[5:0]] : 32'b0;
-    end
-
 
 endmodule
