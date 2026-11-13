@@ -168,7 +168,36 @@ module top (
     );
 
 
-    //todo jacob will do the muxes 
+    /*
+    Wire multiplexers
+    */
+    always_comb begin
+        // Program counter mux
+        case(pc_sel)
+            1'b0: pc = pc_addr_output;
+            1'b1: pc = ALU_Result;
+        endcase
+
+        // ALU Operand 1 mux
+        case(op1_sel)
+            1'b0: A = rs1v;
+            1'b1: A = pc;
+        endcase
+
+        // ALU Operand 2 mux
+        case(op2_sel)
+            1'b0: B = rs2v;
+            1'b1: B = ImmExt;
+        endcase
+
+        // Destination register mux
+        case(rd_sel)
+            2'b00: rdv = ALU_Result;
+            2'b01: rdv = dmem_data_out;
+            2'b10: rdv = pc_addr_output;
+            2'b11: rdv = ImmExt;
+        endcase
+    end
 
     /*
     Main Loop: Cycle RGB LED
