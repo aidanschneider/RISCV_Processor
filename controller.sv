@@ -89,7 +89,7 @@ always_comb begin
         end
         EXECUTER: begin
             alusrca = 2'b10;
-            alu_op = 2'b10;
+            aluop = 2'b10;
         end
         ALUWB: regwrite = 1;
         default: ;
@@ -102,9 +102,11 @@ ALU_Control alu_dec (
     .ALUOp (aluop),
     .funct7 (funct7b5),
     .funct3 (funct3),
-    .Control_out (alu_control)
-)
+    .Control_out (alucontrol)
+);
 
 // engage pc write enable only if pc update is set or if branch is taken (rs1-rs2=0)
 // TODO: this only handles BEQ, so replace zero with a "condition met" signal determined by funct3
 assign pcwrite  = (branch & zero) | pcuupdate;
+
+endmodule
