@@ -31,9 +31,9 @@ statetype state, nextstate;
 
 
 // always block setting current state
-always_ff @(posedge clk, posedge reset) begin
+always_ff @(posedge clk, negedge reset) begin
     // fetch is first state in FSM, so if reset go back to beginning
-    if (reset) state <= FETCH;
+    if (!reset) state <= FETCH;
     // otherwise just proceed to next state
     else state <= nextstate;
 end
