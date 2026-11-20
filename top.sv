@@ -44,33 +44,33 @@ module top (
     logic red;
     logic green;
     logic blue;
-    logic memory_reset
+    logic memory_reset;
 
     /*
     Other Logic Signals
     */
     //instruction fields
-    logic [31:0] instruction
+    logic[31:0] instruction;
     logic[6:0] op;
     logic[4:0] rs1;
     logic[4:0] rs2;
     logic[4:0] rd;
 
-    logic [31:0] A,
-    logic [31:0] B,
-    logic [3:0] control_in,
+    logic [31:0] A;
+    logic [31:0] B;
+    logic [3:0] control_in;
 
-    logic [1:0] ALUOp,
-    logic op5,
-    logic funct75,
-    logic [2:0] funct3,
+    logic [1:0] ALUOp;
+    logic op5;
+    logic funct75;
+    logic [2:0] funct3;
 
 
     logic [3:0] state = INIT;
     logic [21:0] count = 22'd0;
 
-    logic reset,
-    logic zero,
+    logic reset;
+    logic zero;
 
     logic [31:0] ALU_Result;
 
@@ -101,7 +101,7 @@ module top (
     register #(
 
     ) u2 (
-     .clk, (clk),
+     .clk (clk),
      .register_wren (register_wren),
      .rs1 (rs1),
      .rs2 (rs2),
@@ -130,11 +130,11 @@ module top (
     .adrsrc (adrsrc),
     .memwrite (memwrite),
     .irwrite (irwrite),
-    .resultssrc, (resultsrc),
-    .alusrca, (alusrca),
-    .alusrcb, (alusrcb),
-    .alucontrol, (alucontrol),
-    .regwrite, (regwrite),
+    .resultssrc (resultsrc),
+    .alusrca (alusrca),
+    .alusrcb (alusrcb),
+    .alucontrol (alucontrol),
+    .regwrite (regwrite),
 
     );
     ALU_unit #(
@@ -163,7 +163,7 @@ module top (
 
     ) u5 (
     .ImmSrc (ImmSrc),
-    .instruction (instruction).
+    .instruction (instruction),
     .ImmExt (ImmExt),
     );
 
