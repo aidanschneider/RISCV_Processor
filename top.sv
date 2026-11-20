@@ -97,7 +97,7 @@ module top (
         .blue           (blue)
     );
 
-    //register
+    //register file
     register #(
 
     ) u2 (
@@ -130,19 +130,20 @@ module top (
     .adrsrc (adrsrc),
     .memwrite (memwrite),
     .irwrite (irwrite),
-    .resultssrc, (resultsrc),
+    .resultsrc, (resultsrc),
     .alusrca, (alusrca),
     .alusrcb, (alusrcb),
     .alucontrol, (alucontrol),
     .regwrite, (regwrite),
+    .immsrc, (immsrc)
 
     );
     ALU_unit #(
 
     ) u3 (
-    .A (A),
-    .B (B),
-    .control_in (control_in),
+    .A (SrcA),
+    .B (SrcB),
+    .control_in (alucontrol),
     .ALU_Result (ALU_Result),
     .zero (zero)
     );
@@ -167,35 +168,59 @@ module top (
     .ImmExt (ImmExt),
     );
 
+    /*
+    Create registers
+    */
+    always_ff @(posedge clk) begin
+        // Program counter register
+        if (pcwrite) begin
+            pc = result;
+        end
+        // Instruction register
+        if (irwrite) begin
+            old_pc = pc;
+            instruction = imem_data_out;
+        end
+        // Data register
+        data = dmem_data_out; // JK: not sure if this correct
+        // Source values register
+        A = rs1v;
+        B = rs2v;
+        // ALU output register
+        ALU_Out = ALU_Result;
+
+    end
+
 
     /*
     Wire multiplexers
     */
     always_comb begin
-        // Program counter mux
-        case(pc_sel)
-            1'b0: pc = pc_addr_output;
-            1'b1: pc = ALU_Result;
+        // Memory address mux
+        case(adrsrc)
+            1'b0: adr = pc;
+            1'b1: adr = ALU_Result;
         endcase
 
-        // ALU Operand 1 mux
-        case(op1_sel)
-            1'b0: A = rs1v;
-            1'b1: A = pc;
+        // ALU Operand A mux
+        case(alusrca)
+            2'b00: SrcA = pc;
+            2'b01: SrcA = old_pc;
+            2'b10: SrcA = A;
         endcase
 
-        // ALU Operand 2 mux
-        case(op2_sel)
-            1'b0: B = rs2v;
-            1'b1: B = ImmExt;
+        // ALU Operand B mux
+        case(alusrcb)
+            2'b00: SrcB = B;
+            2'b01: SrcB = ImmExt;
+            2'b10: SrcB = 32'd4;
         endcase
 
-        // Destination register mux
-        case(rd_sel)
-            2'b00: rdv = ALU_Result;
-            2'b01: rdv = dmem_data_out;
-            2'b10: rdv = pc_addr_output;
-            2'b11: rdv = ImmExt;
+        // Result mux
+        case(resultsrc)
+            2'b00: result = ALU_Out;
+            2'b01: result = data;
+            2'b10: result = ALU_Result;
         endcase
     end
 
